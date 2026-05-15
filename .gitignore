@@ -1,0 +1,6 @@
+.env
+statenv/
+__pycache__/
+__pycache__*
+app/.env
+app/*.env
