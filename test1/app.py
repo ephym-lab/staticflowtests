@@ -3,34 +3,34 @@ from os import environ
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 
-# Import StaticFlow components
+
 from staticfloww import Gateway, StaticPayload, MemoryAuditor
 from utils import inject_lapfund_creds
+    
 
-# 1. Load your .env file so os.environ can see BASE_URL
 load_dotenv()
 
 app = Flask(__name__)
 
-# 2. Initialize Auditor and Gateway
-# We use a fallback URL just in case the .env isn't found
+#Initialize Auditor and Gateway
+
 auditor = MemoryAuditor()
-base_url = environ.get("BASE_URL") or "https://mssadmin.lapfund.or.ke"
+base_url = environ.get("BASE_URL")
 gateway = Gateway(base_url=base_url, auditor=auditor)
 
-# 3. Register External Routes (Lapfund)
+#Register External Routes
 gateway.add_route(
     action="GET_TOKEN",           
     path="/connect/token",        
     method="POST",
     before_request=inject_lapfund_creds,
-    request_format="form"  # Ensures application/x-www-form-urlencoded
+    request_format="form" 
 )
 
-# 4. Register Internal Routes (Self-pointing for logs)
+# Internal Routes (Self-pointing for logs)
 gateway.add_route(
     action="GET_LOGS",
-    base_url="http://localhost:5000", # Point to your own Flask server
+    base_url="http://localhost:5000", 
     path="/logs",
     method="GET"
 )
@@ -70,5 +70,5 @@ def logs():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
-    # Ensure your Flask port matches the GET_LOGS base_url above
+    #
     app.run(host="localhost", port=5000, debug=True)
