@@ -3,9 +3,9 @@ from os import environ
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
 
-
-from staticfloww import Gateway, StaticPayload, MemoryAuditor
+from staticfloww import Gateway, StaticPayload, MemoryAuditor,OAuth2Handler
 from utils import inject_lapfund_creds
+from schemas import MyGodSchema,MemberDetails,ApiResponse
     
 
 load_dotenv()
@@ -17,6 +17,14 @@ app = Flask(__name__)
 auditor = MemoryAuditor()
 base_url = environ.get("BASE_URL")
 gateway = Gateway(base_url=base_url, auditor=auditor)
+
+
+#Create OAuth Handler for secure authentication
+handler = OAuth2Handler(
+    token_url=f"{base_url}/connect/token", 
+    client_id=environ.get("CLIENT_ID"),
+    client_secret=environ.get("CLIENT_SECRET")
+)
 
 #Register External Routes
 gateway.add_route(
@@ -34,6 +42,19 @@ gateway.add_route(
     path="/logs",
     method="GET"
 )
+
+gateway.add_route(
+    action="GET_MEMBER",           
+    path="/api/Members/{member_no}",
+    method="GET",
+    extract="MemberDetails",
+    auth=True,
+    response_model=ApiResponse    
+)
+
+
+
+
 
 @app.route('/gateway/process', methods=['POST'])
 def process_flow():
