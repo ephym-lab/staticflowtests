@@ -24,6 +24,8 @@ app = Flask(__name__)
 app.json_provider_class = PydanticJSONProvider
 app.json = PydanticJSONProvider(app)
 app.json.sort_keys = False
+
+
 # Initialize Auditor and Gateway
 auditor = MemoryAuditor()
 base_url = environ.get("BASE_URL")
@@ -58,6 +60,14 @@ gateway.add_route(
     path="/api/Members/{member_no}",
     method="GET",
     extract="MemberDetails",
+    auth=True,
+    response_model=ApiResponse
+)
+
+gateway.add_route(
+    action="GET_RELATIONSHIPS",
+    path="/api/Members/relationships",
+    method="GET",
     auth=True,
     response_model=ApiResponse
 )
