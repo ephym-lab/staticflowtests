@@ -2,58 +2,50 @@ import asyncio
 from os import environ
 from flask import Flask, request, jsonify
 from dotenv import load_dotenv
-
-from staticfloww import Gateway, StaticPayload, MemoryAuditor,OAuth2Handler
+from staticfloww import Gateway, StaticPayload, MemoryAuditor, OAuth2Handler
 from utils import inject_lapfund_creds
-from schemas import MyGodSchema,MemberDetails,ApiResponse
-    
+from schemas import MyGodSchema, MemberDetails, ApiResponse
 
 load_dotenv()
-
 app = Flask(__name__)
 
-#Initialize Auditor and Gateway
-
+# Initialize Auditor and Gateway
 auditor = MemoryAuditor()
 base_url = environ.get("BASE_URL")
 gateway = Gateway(base_url=base_url, auditor=auditor)
 
-
-#Create OAuth Handler for secure authentication
+# Create OAuth Handler for secure authentication
 handler = OAuth2Handler(
-    token_url=f"{base_url}/connect/token", 
+    token_url=f"{base_url}/connect/token",
     client_id=environ.get("CLIENT_ID"),
     client_secret=environ.get("CLIENT_SECRET")
 )
 
-#Register External Routes
+# Register External Routes
 gateway.add_route(
-    action="GET_TOKEN",           
-    path="/connect/token",        
+    action="GET_TOKEN",
+    path="/connect/token",
     method="POST",
     before_request=inject_lapfund_creds,
-    request_format="form" 
+    request_format="form"
 )
 
 # Internal Routes (Self-pointing for logs)
 gateway.add_route(
     action="GET_LOGS",
-    base_url="http://localhost:5000", 
+    base_url="http://localhost:5000",
     path="/logs",
     method="GET"
 )
 
 gateway.add_route(
-    action="GET_MEMBER",           
+    action="GET_MEMBER",
     path="/api/Members/{member_no}",
     method="GET",
     extract="MemberDetails",
     auth=True,
-    response_model=ApiResponse    
+    response_model=ApiResponse
 )
-
-
-
 
 
 @app.route('/gateway/process', methods=['POST'])
@@ -63,20 +55,28 @@ def process_flow():
     Routes every request based on the 'action' field.
     """
     raw_payload = request.get_json()
-    
     try:
         # Convert raw JSON to StaticPayload (validation happens here)
         payload = StaticPayload(**raw_payload)
-        
+
         # Execute the request through the gateway
         result = asyncio.run(gateway.route_request(
             payload=payload,
             headers={"Content-Type": "application/x-www-form-urlencoded"}
         ))
+
+        # Serialize ApiResponse model properly, otherwise fall back to jsonify
+        if isinstance(result, ApiResponse):
+            return app.response_class(
+                result.model_dump_json(),
+                mimetype='application/json'
+            )
         return jsonify(result)
+
     except Exception as e:
         # StaticFlow 0.1.8+ captures tracebacks automatically in the auditor!
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/logs', methods=['GET'])
 def logs():
@@ -90,6 +90,6 @@ def logs():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 if __name__ == "__main__":
-    #
     app.run(host="localhost", port=5000, debug=True)

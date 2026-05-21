@@ -15,11 +15,11 @@ class ErrorDetail(BaseModel):
     details: Optional[str] = None
 
 class ApiResponse(BaseModel):
-    Success: bool
-    StatusCode: int
-    Message: Optional[str] = None
-    Data: Optional[Any] = None
-    Error: Optional[ErrorDetail] = None
-    RequestId: Optional[str] = None
-    ResponseTimestamp: datetime
-    ProcessingTimeMs: int
+    success: bool
+    statusCode: int
+    message: Optional[str] = None
+    data: Optional[Any] = None
+    error: Optional[ErrorDetail] = None
+    requestId: Optional[str] = None
+    responseTimestamp: datetime
+    processingTimeMs: int
