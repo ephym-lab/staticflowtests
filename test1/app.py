@@ -6,9 +6,24 @@ from staticfloww import Gateway, StaticPayload, MemoryAuditor, OAuth2Handler
 from utils import inject_lapfund_creds
 from schemas import MyGodSchema, MemberDetails, ApiResponse
 
+from flask.json.provider import DefaultJSONProvider
+from pydantic import BaseModel
+
+class PydanticJSONProvider(DefaultJSONProvider):
+    def default(self, obj):
+        if isinstance(obj, BaseModel):
+            return obj.model_dump()
+        return super().default(obj)
+
+
+
 load_dotenv()
 app = Flask(__name__)
 
+#instatiate JSON provider to handle pydantic models instead of checking instances
+app.json_provider_class = PydanticJSONProvider
+app.json = PydanticJSONProvider(app)
+app.json.sort_keys = False
 # Initialize Auditor and Gateway
 auditor = MemoryAuditor()
 base_url = environ.get("BASE_URL")
@@ -66,11 +81,11 @@ def process_flow():
         ))
 
         # Serialize ApiResponse model properly, otherwise fall back to jsonify
-        if isinstance(result, ApiResponse):
-            return app.response_class(
-                result.model_dump_json(),
-                mimetype='application/json'
-            )
+        # if isinstance(result, ApiResponse):
+        #     return app.response_class(
+        #         result.model_dump_json(),
+        #         mimetype='application/json'
+        #     )
         return jsonify(result)
 
     except Exception as e:
