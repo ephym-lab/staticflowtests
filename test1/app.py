@@ -64,11 +64,30 @@ gateway.add_route(
     response_model=ApiResponse
 )
 
+def extract_national_id(payload: StaticPayload, **kwargs) -> dict:
+    """
+    Extracts nationalId from MemberDetails section and returns
+    a plain dict suitable for use as GET query parameters.
+    """
+    member = payload.pluck("MemberDetails")
+    if member is None:
+        raise ValueError("MemberDetails section is required for GET_RELATIONSHIPS")
+
+    if isinstance(member, dict):
+        national_id = member.get("nationalId")
+    else:
+        national_id = getattr(member, "nationalId", None) or getattr(member, "member_no", None)
+
+    if not national_id: 
+        raise ValueError("nationalId (or member_no) is required in MemberDetails")
+    return {"nationalId": national_id}
+
 gateway.add_route(
     action="GET_RELATIONSHIPS",
     path="/api/Members/relationships",
     method="GET",
     auth=True,
+    before_request=extract_national_id,
     response_model=ApiResponse
 )
 

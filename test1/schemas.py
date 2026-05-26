@@ -4,7 +4,8 @@ from typing import Any, Optional
 from staticfloww import StaticPayload, Section
 
 class MemberDetails(Section):
-    member_no: str    
+    member_no: str  
+    nationalId: str  
 
 class MyGodSchema(StaticPayload):
     MemberDetails: Optional[MemberDetails] = None
@@ -23,3 +24,4 @@ class ApiResponse(BaseModel):
     requestId: Optional[str] = None
     responseTimestamp: datetime
     processingTimeMs: int
+
